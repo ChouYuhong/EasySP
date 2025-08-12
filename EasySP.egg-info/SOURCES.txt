@@ -1,5 +1,5 @@
 README.md
-setup.py
+pyproject.toml
 EasySP.egg-info/PKG-INFO
 EasySP.egg-info/SOURCES.txt
 EasySP.egg-info/dependency_links.txt
@@ -8,3 +8,11 @@ easysp/__init__.py
 easysp/core.py
 easysp/communication/__init__.py
 easysp/communication/all_to_all.py
+easysp/ulysses_layers/__init__.py
+easysp/ulysses_layers/attn/__init__.py
+easysp/ulysses_layers/attn/attn.py
+easysp/ulysses_layers/gla/__init__.py
+easysp/ulysses_layers/gla/gla.py
+easysp/ulysses_layers/hgrn2/__init__.py
+easysp/ulysses_layers/hgrn2/hgrn2.py
+test/all2all.py
