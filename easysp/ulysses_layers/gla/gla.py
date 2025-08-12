@@ -96,7 +96,7 @@ class GatedLinearAttentionUlysses(nn.Module):
         fuse_norm: bool = True,
         layer_idx: int = None,
         sp_group: ProcessGroup = None,
-    ) -> GatedLinearAttention:
+    ) -> GatedLinearAttentionUlysses:
         super().__init__()
 
         self.mode = mode
