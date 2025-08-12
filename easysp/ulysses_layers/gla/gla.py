@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from fla.models.utils import Cache
 
 
-class GatedLinearAttention(nn.Module):
+class GatedLinearAttentionUlysses(nn.Module):
     r"""
     The layer implementaion for [Gated Linear Attention Transformers with Hardware-Efficient Training](https://arxiv.org/abs/2312.06635).  # noqa
 

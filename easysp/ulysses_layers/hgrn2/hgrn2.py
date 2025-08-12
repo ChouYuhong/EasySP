@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from fla.models.utils import Cache
 
 
-class HGRN2Attention(nn.Module):
+class HGRN2AttentionUlysses(nn.Module):
 
     def __init__(
         self,
