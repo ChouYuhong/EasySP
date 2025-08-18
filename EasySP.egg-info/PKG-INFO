@@ -2,5 +2,10 @@ Metadata-Version: 2.4
 Name: EasySP
 Version: 0.1.0
 Summary: A lightweight library for easy sequence parallelism
-Author-email: 1B1B team <your@email.com>
+Author: 1B1B team
+Author-email: your@email.com
 Requires-Python: >=3.7
+Dynamic: author
+Dynamic: author-email
+Dynamic: requires-python
+Dynamic: summary
