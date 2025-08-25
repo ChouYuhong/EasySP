@@ -19,4 +19,3 @@ easysp/ulysses_layers/hgrn2/__init__.py
 easysp/ulysses_layers/hgrn2/hgrn2.py
 easysp/utils/__init__.py
 easysp/utils/convert.py
-test/all2all.py
