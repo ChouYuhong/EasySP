@@ -125,7 +125,7 @@ class AttentionUlysses(nn.Module):
 
         if self.max_position_embeddings is not None:
             max_seqlen = max(max_seqlen, self.max_position_embeddings)
-        q, k = self.rotary(q, k, seqlen_offset=seqlen_offset, max_seqlen=max_seqlen, cu_seqlens=cu_seqlens)
+        # q, k = self.rotary(q, k, seqlen_offset=seqlen_offset, max_seqlen=max_seqlen, cu_seqlens=cu_seqlens)
 
         if past_key_values is not None:
             cache_has_content = past_key_values.get_seq_length(self.layer_idx) > 0
