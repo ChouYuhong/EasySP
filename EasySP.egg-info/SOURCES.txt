@@ -8,10 +8,14 @@ easysp/__init__.py
 easysp/core.py
 easysp/communication/__init__.py
 easysp/communication/all_to_all.py
+easysp/layers/__init__.py
+easysp/layers/dela.py
 easysp/ulysses_layers/__init__.py
 easysp/ulysses_layers/ulysses.py
 easysp/ulysses_layers/attn/__init__.py
 easysp/ulysses_layers/attn/attn.py
+easysp/ulysses_layers/dela/__init__.py
+easysp/ulysses_layers/dela/dela.py
 easysp/ulysses_layers/gla/__init__.py
 easysp/ulysses_layers/gla/configuration_gla.py
 easysp/ulysses_layers/gla/gla.py

@@ -44,7 +44,7 @@ class HGRN2AttentionUlysses(nn.Module):
         norm_eps: float = 1e-5,
         layer_idx: int = None,
         sp_group: ProcessGroup = None,
-    ) -> HGRN2Attention:
+    ):
         super().__init__()
 
         self.mode = mode
