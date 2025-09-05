@@ -73,7 +73,6 @@ def ulysseslize(model, sp_group):
                 conv_size=module.conv_size,
                 conv_bias=module.conv_bias,
                 use_output_gate=module.use_output_gate,
-                gate_fn=module.gate_fn,
                 clamp_min=module.clamp_min,
                 fuse_norm=False,
                 layer_idx=module.layer_idx,
