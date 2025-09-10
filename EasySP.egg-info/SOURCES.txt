@@ -1,5 +1,5 @@
 README.md
-setup.py
+pyproject.toml
 EasySP.egg-info/PKG-INFO
 EasySP.egg-info/SOURCES.txt
 EasySP.egg-info/dependency_links.txt
@@ -10,8 +10,13 @@ easysp/communication/__init__.py
 easysp/communication/all_to_all.py
 easysp/layers/__init__.py
 easysp/layers/dela.py
+easysp/models/dela/__init__.py
+easysp/models/dela/configuration_dela.py
+easysp/models/dela/modeling_dela.py
+easysp/models/gla/__init__.py
+easysp/models/gla/configuration_gla.py
+easysp/models/gla/modeling_gla.py
 easysp/ulysses_layers/__init__.py
-easysp/ulysses_layers/ulysses.py
 easysp/ulysses_layers/attn/__init__.py
 easysp/ulysses_layers/attn/attn.py
 easysp/ulysses_layers/dela/__init__.py
@@ -23,3 +28,6 @@ easysp/ulysses_layers/hgrn2/__init__.py
 easysp/ulysses_layers/hgrn2/hgrn2.py
 easysp/utils/__init__.py
 easysp/utils/convert.py
+test/all2all.py
+test/dela.py
+test/repeat.py
