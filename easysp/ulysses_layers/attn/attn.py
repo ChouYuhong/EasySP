@@ -8,12 +8,13 @@ from typing import TYPE_CHECKING, Optional, Tuple
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from torch import distributed as dist
 from torch.distributed import ProcessGroup
 from easysp.communication import all2all
 
-from einops import rearrange
+from einops import rearrange, repeat
 from transformers.utils import logging
 
 from fla.layers.utils import pad_input, unpad_input
@@ -85,6 +86,12 @@ class AttentionUlysses(nn.Module):
 
         self.rotary = RotaryEmbedding(dim=self.head_dim, base=self.rope_theta)
 
+        # compute padding heads
+        self.num_padding_heads = 0
+        if self.num_heads % 8 != 0:
+            padded_num_heads = (self.num_heads // 8 + 1) * 8
+            self.num_padding_heads = padded_num_heads - self.num_heads
+
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -140,6 +147,7 @@ class AttentionUlysses(nn.Module):
                 k = rearrange(k, '... (h d) -> ... h d', d=self.head_dim)
                 v = rearrange(v, '... (h d) -> ... h d', d=self.head_dim)
 
+        
         # Contains at least one padding token in the sequence
         assert attention_mask is None, f"attention mask is not none and it is {attention_mask} since we are sp mode now"
         if attention_mask is not None:
@@ -159,6 +167,11 @@ class AttentionUlysses(nn.Module):
             )
             o = pad_input(o, indices_q, batch_size, q_len)
         elif cu_seqlens is not None:
+            if self.num_kv_groups > 1:
+                k = repeat(k, "b l h d -> b l (h g) d", g=self.num_kv_groups)
+                v = repeat(v, "b l h d -> b l (h g) d", g=self.num_kv_groups)
+            if self.num_padding_heads > 0:
+                q, k, v = [F.pad(x, (0, 0, 0, self.num_padding_heads), "constant", 0) for x in (q, k, v)]
             q, k, v = [all2all(input=x, scatter_dim=2, gather_dim=1, sp_group=self.sp_group) for x in (q, k, v)]
             max_seqlen = q.shape[1]
             q, k = self.rotary(q, k, seqlen_offset=seqlen_offset, max_seqlen=max_seqlen, cu_seqlens=cu_seqlens)
@@ -172,7 +185,14 @@ class AttentionUlysses(nn.Module):
                 window_size=(-1, -1) if self.window_size is None else (self.window_size-1, 0)
             ).unsqueeze(0)
             o = all2all(input=o, scatter_dim=1, gather_dim=2, sp_group=self.sp_group)
+            if self.num_padding_heads > 0:
+                o = o[..., :-self.num_padding_heads, :].contiguous()
         else:
+            if self.num_kv_groups > 1:
+                k = repeat(k, "b l h d -> b l (h g) d", g=self.num_kv_groups)
+                v = repeat(v, "b l h d -> b l (h g) d", g=self.num_kv_groups)
+            if self.num_padding_heads > 0:
+                q, k, v = [F.pad(x, (0, 0, 0, self.num_padding_heads), "constant", 0) for x in (q, k, v)]
             q, k, v = [all2all(input=x, scatter_dim=2, gather_dim=1, sp_group=self.sp_group) for x in (q, k, v)]
             max_seqlen = q.shape[1]
             q, k = self.rotary(q, k, seqlen_offset=seqlen_offset, max_seqlen=max_seqlen, cu_seqlens=cu_seqlens)
@@ -182,6 +202,8 @@ class AttentionUlysses(nn.Module):
                 window_size=(-1, -1) if self.window_size is None else (self.window_size-1, 0)
             )
             o = all2all(input=o, scatter_dim=1, gather_dim=2, sp_group=self.sp_group)
+            if self.num_padding_heads > 0:
+                o = o[..., :-self.num_padding_heads, :].contiguous()
         o = o.reshape(batch_size, q_len, -1)
         o = self.o_proj(o)
 
