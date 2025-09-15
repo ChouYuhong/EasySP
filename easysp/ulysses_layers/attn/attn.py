@@ -36,7 +36,7 @@ except ImportError:
 logger = logging.get_logger(__name__)
 
 
-class Attention(nn.Module):
+class AttentionUlysses(nn.Module):
 
     def __init__(
         self,
