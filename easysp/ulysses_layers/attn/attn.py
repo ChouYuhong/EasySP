@@ -36,19 +36,21 @@ except ImportError:
 logger = logging.get_logger(__name__)
 
 
-class AttentionUlysses(nn.Module):
+class Attention(nn.Module):
 
     def __init__(
         self,
         hidden_size: int = 2048,
         num_heads: int = 32,
         num_kv_heads: Optional[int] = None,
+        head_dim: Optional[int] = None,
         qkv_bias: bool = False,
         qk_norm: bool = False,
         window_size: Optional[int] = None,
         rope_theta: Optional[float] = 10000.,
         max_position_embeddings: Optional[int] = None,
         layer_idx: int = None,
+        use_rope: bool = True,
         sp_group: ProcessGroup = None,
     ):
         super().__init__()
@@ -60,7 +62,7 @@ class AttentionUlysses(nn.Module):
         else:
             self.num_kv_heads = num_kv_heads
         self.num_kv_groups = num_heads // self.num_kv_heads
-        self.head_dim = self.hidden_size // self.num_heads
+        self.head_dim = head_dim if head_dim is not None else hidden_size // num_heads
         self.kv_dim = self.num_kv_heads * self.head_dim
         self.qkv_bias = qkv_bias
         self.qk_norm = qk_norm
@@ -74,23 +76,29 @@ class AttentionUlysses(nn.Module):
 
         if flash_attn_func is None:
             raise ImportError("Please install Flash Attention via `pip install flash-attn --no-build-isolation` first")
-
-        self.q_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=self.qkv_bias)
-        self.k_proj = nn.Linear(self.hidden_size, self.kv_dim, bias=self.qkv_bias)
-        self.v_proj = nn.Linear(self.hidden_size, self.kv_dim, bias=self.qkv_bias)
-        self.o_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=False)
-
+    
+        # self.q_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=self.qkv_bias)
+        # self.k_proj = nn.Linear(self.hidden_size, self.kv_dim, bias=self.qkv_bias)
+        # self.v_proj = nn.Linear(self.hidden_size, self.kv_dim, bias=self.qkv_bias)
+        # self.o_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=False)
+        self.q_proj = nn.Linear(
+            self.hidden_size, self.num_heads * self.head_dim, bias=self.qkv_bias
+        )
+        self.k_proj = nn.Linear(
+            self.hidden_size, self.num_kv_heads * self.head_dim, bias=self.qkv_bias
+        )
+        self.v_proj = nn.Linear(
+            self.hidden_size, self.num_kv_heads * self.head_dim, bias=self.qkv_bias
+        )
+        self.o_proj = nn.Linear(
+            self.num_heads * self.head_dim, self.hidden_size, bias=False
+        )
         if qk_norm:
             self.q_norm = RMSNorm(self.head_dim)
             self.k_norm = RMSNorm(self.head_dim)
-
-        self.rotary = RotaryEmbedding(dim=self.head_dim, base=self.rope_theta)
-
-        # compute padding heads
-        self.num_padding_heads = 0
-        if self.num_heads % 8 != 0:
-            padded_num_heads = (self.num_heads // 8 + 1) * 8
-            self.num_padding_heads = padded_num_heads - self.num_heads
+        self.use_rope = use_rope
+        if self.use_rope:   
+            self.rotary = RotaryEmbedding(dim=self.head_dim, base=self.rope_theta)
 
     def forward(
         self,
@@ -174,7 +182,8 @@ class AttentionUlysses(nn.Module):
                 q, k, v = [F.pad(x, (0, 0, 0, self.num_padding_heads), "constant", 0) for x in (q, k, v)]
             q, k, v = [all2all(input=x, scatter_dim=2, gather_dim=1, sp_group=self.sp_group) for x in (q, k, v)]
             max_seqlen = q.shape[1]
-            q, k = self.rotary(q, k, seqlen_offset=seqlen_offset, max_seqlen=max_seqlen, cu_seqlens=cu_seqlens)
+            if self.use_rope: 
+                q, k = self.rotary(q, k, seqlen_offset=seqlen_offset, max_seqlen=max_seqlen, cu_seqlens=cu_seqlens)
             o = flash_attn_varlen_func(
                 q.squeeze(0), k.squeeze(0), v.squeeze(0),
                 cu_seqlens_q=cu_seqlens,
@@ -195,7 +204,8 @@ class AttentionUlysses(nn.Module):
                 q, k, v = [F.pad(x, (0, 0, 0, self.num_padding_heads), "constant", 0) for x in (q, k, v)]
             q, k, v = [all2all(input=x, scatter_dim=2, gather_dim=1, sp_group=self.sp_group) for x in (q, k, v)]
             max_seqlen = q.shape[1]
-            q, k = self.rotary(q, k, seqlen_offset=seqlen_offset, max_seqlen=max_seqlen, cu_seqlens=cu_seqlens)
+            if self.use_rope: 
+                q, k = self.rotary(q, k, seqlen_offset=seqlen_offset, max_seqlen=max_seqlen, cu_seqlens=cu_seqlens)
             o = flash_attn_func(
                 q, k, v,
                 causal=True,

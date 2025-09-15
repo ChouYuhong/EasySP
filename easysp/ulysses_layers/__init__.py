@@ -19,12 +19,14 @@ def ulysseslize(model, sp_group):
                 hidden_size=module.hidden_size,
                 num_heads=module.num_heads,
                 num_kv_heads=module.num_kv_heads,
+                head_dim=module.head_dim,
                 qkv_bias=module.qkv_bias,
                 qk_norm=module.qk_norm,
                 window_size=module.window_size,
                 rope_theta=module.rope_theta,
                 max_position_embeddings=module.max_position_embeddings,
                 layer_idx=module.layer_idx,
+                use_rope=module.use_rope,
                 sp_group=sp_group,
             )
             setattr(layer, "attn", new_module)
