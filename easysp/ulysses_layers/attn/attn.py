@@ -99,6 +99,12 @@ class AttentionUlysses(nn.Module):
         self.use_rope = use_rope
         if self.use_rope:   
             self.rotary = RotaryEmbedding(dim=self.head_dim, base=self.rope_theta)
+        
+        # compute padding heads
+        self.num_padding_heads = 0
+        if self.num_heads % 8 != 0:
+            padded_num_heads = (self.num_heads // 8 + 1) * 8
+            self.num_padding_heads = padded_num_heads - self.num_heads
 
     def forward(
         self,
